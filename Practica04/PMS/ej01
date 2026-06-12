@@ -1,0 +1,70 @@
+Suponga que existe un antivirus distribuido que se compone de R procesos robots
+Examinadores y 1 proceso Analizador. Los procesos Examinadores están buscando
+continuamente posibles sitios web infectados; cada vez que encuentran uno avisan la
+dirección y luego continúan buscando. El proceso Analizador se encarga de hacer todas las pruebas necesarias con cada uno de los sitios encontrados por los robots para determinar si
+están o no infectados.
+a) Analice el problema y defina qué procesos, recursos y comunicaciones serán
+necesarios/convenientes para resolver el problema
+
+Teniendo en cuenta que el problema involucra el tipico caso de dejar un recurso y seguir trabajando, para resolver este problema es evidente que la forma más óptima de realizar esta consigna es de manera asincrónica. Sin embargo, es evidente a su vez que se debe resolver de manera asincrónica, por lo tanto propondría la existencia de 3 procesos, los R procesos examinadores, el proceso analizador y un proceso administrador que se encargará de recibir los pedidos.
+
+b) resolver con PMS sin respetar el orden
+ process examinador[int id:0..R-1]{
+	text direccion;
+	while(true){
+		buscarPosibleInfectado(direccion);//devuelve en direccion una posible pagina infectada
+		admin!Infec(direccion);
+	}	
+}
+
+process analizador{
+	text direccion;
+	boolean infectada;
+	while(true){
+		admin!laburo();
+		admin?recibir(direccion);
+		infectada = analisisNecesarios(direccion);
+	}
+}
+
+process admin{
+	text direccion;
+	lista l;
+	do
+		::examinador[*]?(direccion)->enlistarRandom(l, direccion);
+		::!empty(c); analizador?laburo() -> tomarCualquiera(l, direccion);
+						    analizador!recibir(direccion);
+	od	
+}	
+
+}
+
+c) process examinador[int id:0..R-1]{
+	text direccion;
+	while(true){
+		buscarPosibleInfectado(direccion);//devuelve en direccion una posible pagina infectada
+		admin!Infec(direccion);
+	}	
+}
+
+process analizador{
+	text direccion;
+	boolean infectada;
+	while(true){
+		admin!laburo();
+		admin?recibir(direccion);
+		infectada = analisisNecesarios(direccion);
+	}
+}
+
+process admin{
+	text direccion;
+	cola c;
+	do
+		::examinador[*]?(direccion)->encolar(c, direccion);
+		::!empty(c); analizador?laburo() -> desencolar(c, direccion); //al ser FIFO, sale en orden
+						    analizador!recibir(direccion);
+	od	
+}	
+
+}

@@ -1,0 +1,74 @@
+En una exposición aeronáutica hay un simulador de vuelo (que debe ser usado con
+exclusión mutua) y un empleado encargado de administrar su uso. Hay P personas que
+esperan a que el empleado lo deje acceder al simulador, lo usa por un rato y se retira.
+a) Implemente una solución donde el empleado sólo se ocupa de garantizar la
+exclusión mutua (sin importar el orden).
+b) Modifique la solución anterior para que el empleado los deje acceder según el orden
+de su identificador (hasta que la persona i no lo haya usado, la persona i+1 debe
+esperar).
+c) Modifique la solución a) para que el empleado considere el orden de llegada para
+dar acceso al simulador.
+Nota: cada persona usa sólo una vez el simulador
+
+a)
+	process persona[int id:0..P-1]{
+		empleado!llegue(id);
+		empleado?usar[id]();
+		usarSimulador();
+		empleado!termine[id]();
+	}
+	process empleado{
+		int contador = 0;
+		int idP;
+		while (contador<P){
+			persona[*].llegue(idP);
+			persona.usar[idP]();
+			persona?termine[idP]();
+			contador++;
+		}
+	}
+	
+b) solo modifico el proceso empleado, la persona ya no envía su id en llegue
+	process empleado{
+		for (int i=0, i<P,i++){
+			persona[i]?llegue();
+			persona!usar[i]();
+			persona?termine[i]();
+			contador++;
+		}
+	}
+	
+c) modificar solucion en a para respetar orden de llegada
+
+	process persona[int id:0..P-1]{
+		admin!llegue(id);
+		empleado[id]?usar();
+		usarSimulador();
+		empleado[id]!termine[id]();
+	}
+	
+	process empleado{
+		int contador = 0;
+		int idP;
+		while (contador<P){
+			admin!laburo();
+			admin?labura(idP);
+			persona[idP]!usar();
+			persona[idP]?termine();
+			contador++;
+		}
+	}
+	
+	process admin{
+		contador = 0;
+		int idP;
+		cola c;
+		do
+			::(contador<P);persona[*]?llegue(idP)->
+				encolar(c,idP);
+				contador++	
+			::!empty(c);empleado?laburo(); ->
+				desencolar(c,idP);
+				empleado!labura(idP);
+		od	
+	}

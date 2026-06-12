@@ -1,0 +1,50 @@
+//Se tiene un curso con 40 alumnos, la maestra entrega una tarea distinta a cada alumno, luego
+//cada alumno realiza su tarea y se la entrega a la maestra para que la corrija, esta revisa la tarea
+//y si está bien le avisa al alumno que puede irse, si la tarea está mal le indica los errores, el
+//alumno corregirá esos errores y volverá a entregarle la tarea a la maestra para que realice la
+//corrección nuevamente, esto se repite hasta que la tarea no tenga errores
+
+int N = 40;
+vector aprobados [N](boolean) = ([N] false); cola C; sem alumnos[N] = ([N] 0), mutex= 1;
+vector errores [N](String); sem sem_tareas = 0;
+
+Process alumno [id:0..N-1]{
+	tarea T;
+	//realizar la tarea
+	P(mutex);
+	encolar(C,id, T);
+	V(mutex);
+	V(sem_tareas); //hace falta protegerlo?
+	P(alumnos[id]);
+	while (!aprobados[id]){
+		print(errores[id]); //ve sus errores
+		//rehacer tarea
+		P(mutex);
+		encolar(C,id, T);
+		V(mutex);
+		P(alumnos[id]);
+	}
+	//si llego aca es porque aprobo
+	//se va
+}
+
+Process maestra{
+	int id;
+	int contador = 0;
+	while(contador<N){
+		P(sem_tareas);
+			
+			P(mutex);
+			id = desencolar(C);
+			V(mutex);		
+			corregir(aprobados[id], errores[id]);
+			V(alumnos[id]);
+			if(aprobados[id]){
+				contador++;
+			}	
+	}
+	
+
+}
+
+	

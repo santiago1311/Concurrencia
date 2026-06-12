@@ -1,0 +1,76 @@
+Suponga que N clientes llegan a la cola de un banco y que serán atendidos por sus
+empleados. Analice el problema y defina qué procesos, recursos y comunicaciones serán
+necesarios/convenientes para resolver el problema. Luego, resuelva considerando las
+siguientes situaciones:
+a. Existe un único empleado, el cual atiende por orden de llegada.
+
+chan Atender(text);
+
+process cliente[int id:1..N]{
+	text pedido;
+	generarPedido(pedido);
+	send Atender(pedido);
+}
+process Empleado{
+	text pedido;
+	while(true){
+		receive Atender(pedido);
+		resolverPedido(pedido);
+	}
+}
+
+
+
+b. Ídem a) pero considerando que hay 2 empleados para atender, ¿qué debe
+modificarse en la solución anterior?
+
+process cliente[int id:1..N]{
+	text pedido;
+	generarPedido(pedido);
+	send Atender(pedido);
+}
+
+process Empleado[int id:0..1]{
+	text pedido;
+	while(true){
+		receive Atender(pedido);
+		resolverPedido(pedido);
+	}
+}
+
+c. Ídem b) pero considerando que, si no hay clientes para atender, los empleados
+realizan tareas administrativas durante 15 minutos. ¿Se puede resolver sin usar
+procesos adicionales? ¿Qué consecuencias implicaría?
+Se puede resolver sin procesos adicionales, en este caso un coordinador, pero puede generar demoras innecesarias ya que al hacer un empty podría darse el caso que ambos empleados vean que la cola de pedidos no esta vacía pero que solo haya un elemento en la cola, por lo que uno haría un receive efectivamente y el otro quedaría esperando en lugar de hacer tareas durante 15 minutos.
+
+chan laburo(int)
+chan labura[2](text);
+chan Atender(text);
+
+process cliente[int id:1..N]{
+	text pedido;
+	generarPedido(pedido);
+	send Atender(pedido);
+}
+
+process Empleado[int id:0..1]{
+	text pedido;
+	while(true){
+		send laburo(id);
+		receive labura[id](pedido);
+		if (pedido != "VACIO") resolverPedido(pedido);
+		else delay(900);//delay de 15 minutos
+	}
+}
+
+process Coordinador{
+	text ped;
+	int idE;
+	while(true){
+		receive laburo(idE);
+		if(empty(Atender)) ped = "VACIO";
+		else receive Atender(ped);
+		send labura[idE](ped);
+	}
+}
+

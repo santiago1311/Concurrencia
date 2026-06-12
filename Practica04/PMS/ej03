@@ -1,0 +1,157 @@
+En un examen final hay N alumnos y P profesores. Cada alumno resuelve su examen, lo
+entrega y espera a que alguno de los profesores lo corrija y le indique la nota. Los
+profesores corrigen los exámenes respetando el orden en que los alumnos van entregando.
+a) Implemente una solución con PMS considerando que P=1.
+b) Implemente una solución con PMS considerando que P>1.
+c) Modifique (b) considerando que los alumnos no comienzan a realizar su examen
+hasta que todos hayan llegado al aula.
+Nota: maximizar la concurrencia; no generar demora innecesaria; todos los procesos deben
+terminar su ejecución. 
+
+a) process alumno [int id:0..N-1]{
+	text examen;
+	int nota;
+	resolverExamen(examen);
+	admin!termine(examen,id);	
+	profesor?correccion[id](nota);
+    }
+    
+    process admin{
+    	text examen;
+    	int idA;
+    	int contador = 0;
+    	cola c;
+    	do
+    		::(contador!=N); alumno[*]?termine(examen,idA);->
+    			encolar(c,examen,idA);
+    			contador++;
+    		::!empty(c); profesor?quierolaburar(); -> 
+  			desencolar(c,examen,idA);
+  			profesor!labura(examen,idA);  		
+    	od
+    	profesor?quierolaburar();->labura("NOHAY",-1);
+    }
+    
+    process profesor{
+    	int nota;
+    	int idA;
+    	int contador;
+    	text examen;
+    	while(true){
+    		admin!quierolaburar();
+    		admin?labura(examen, idA);
+    		if(idA == -1) break; //termino el administrador, ya está
+    		corregirExamen(examen,nota);
+    		alumno!correccion[idA](nota);
+    	}
+    
+    }
+b)  
+    process alumno [int id:0..N-1]{
+	text examen;
+	int nota;
+	resolverExamen(examen);
+	admin!termine(examen,id);	
+	admin[id]?correccion(nota);
+    }
+    
+    process admin{
+    	text examen;
+    	int idA;
+    	int contador = 0;
+    	int contdorP = 0;
+    	int corregidos = 0;
+    	cola c;
+    	int nota;
+    	int idP;
+    	do
+    		::(contador!=N); alumno[*]?termine(examen,idA);->
+    			encolar(c,examen,idA);
+    			contador++;
+    		::!empty(c); profesor[*]?quierolaburar(idP); -> 
+  			desencolar(c,examen,idA);
+  			profesor[id]!labura(examen,idA);
+  		::(corregidos!=N);profesor[*]?correccion(nota,idA)->
+  			alumno[idA]!correccion(nota);
+  			corregidos++;  		
+    	od
+    	while(contdorP != P){
+    		profesor?quierolaburar(idP);
+    		profesor[idP]!labura("NOHAY",-1);
+    		contdorP++;
+    	}
+    }
+    
+    process profesor [int id:0..P-1] {
+    	int nota;
+    	int idA;
+    	int contador;
+    	text examen;
+    	while(true){
+    		admin!quierolaburar(id);
+    		admin[id]?labura(examen, idA);
+    		if(idA == -1) break; //termino el administrador, ya está
+    		corregirExamen(examen,nota);
+    		admin!correccion(nota,idA);
+    	}
+    
+    }
+    
+c)
+    process alumno [int id:0..N-1]{
+	text examen;
+	int nota;
+	admin!llegue();
+	admin?empeza[id]();
+	resolverExamen(examen);
+	admin!termine(examen,id);	
+	profesor[*]?correccion[id](nota);
+    }
+    
+    process admin{
+    	text examen;
+    	int idA;
+    	int llegaron = 0;
+    	int contador = 0;
+    	int contdorP = 0;
+    	cola c;
+    	int idP;
+    	while(llegaron<N){
+    		alumno[*]?llegue();
+    		llegaron++;
+    	}
+    	while(llegaron>0){
+    		llegaron--;//porque los id van de 0 a N-1
+    		alumno!empeza[llegaron]();
+    	}
+    	do
+    		::(contador!=N); alumno[*]?termine(examen,idA);->
+    			encolar(c,examen,idA);
+    			contador++;
+    		::!empty(c); profesor[*]?quierolaburar(idP); -> 
+  			desencolar(c,examen,idA);
+  			profesor!labura[idP](examen,idA);  		
+    	od
+    	while(contdorP != P){
+    		profesor?quierolaburar(idP);
+    		profesor!labura[idP]("NOHAY",-1);
+    		contdorP++;
+    	}
+    }
+    
+    process profesor [int id:0..P-1] {
+    	int nota;
+    	int idA;
+    	int contador;
+    	text examen;
+    	while(true){
+    		admin!quierolaburar(id);
+    		admin?labura[id](examen, idA);
+    		if(idA == -1) break; //termino el administrador, ya está
+    		corregirExamen(examen,nota);
+    		alumno!correccion[idA](nota);
+    	}
+    
+    }
+
+//la sintaxis es incorrecta, siempre es alumno[id]!cosaahacer()

@@ -1,0 +1,93 @@
+En una mesa de exámenes hay 3 profesores que les deben tomar un examen oral a 30 alumnos
+de acuerdo al orden de llegada. Cada examen es tomado por un único profesor. Cuando un
+alumno llega, espera a que alguno de los profesores (cualquiera) lo llame y se dirige al
+escritorio correspondiente a ese profesor, donde le tomará el examen; al terminar el
+profesor le da la nota y el alumno se retira. Cuando un profesor está libre llama al siguiente
+alumno.
+Nota: todos los procesos deben terminar su ejecución.
+N=30
+
+process Profesor[id:0..2]{
+	int idA;
+	while(true){
+		Aula.Llama(idA,id);
+		if(idA == -1) break;
+		Escritorio[id].TomarExamen(idA);
+	}
+	
+}
+
+process Alumno[id:0..29]{
+	int nota;
+	int idP;
+	Aula.Llegue(id,idP);
+	Escritorio[idP].HacerExamen(nota, id);
+}
+
+Monitor Aula{
+	int ProfesorAsignado[N];
+	Cola C;
+	int esperando=0;
+	cond vc[N];	
+	int cantidadEval=0;
+	cond llegoAlumno;
+
+	procedure Llegue(id:in int, idP: out int){
+		push(C,id);
+		esperando++;
+		signal(llegoAlumno);
+		//podría hacer un signal_all pero esto implicaria
+		//que el profesor tenga que preguntar si hay alumnos esperando nuevamente
+		//no se si tiene sentido, ya que el signal_all despierta a todos los
+		//profesores que esten esperando a que haya un alumno
+		wait(vc[id]);
+		idP = ProfesorAsignado[id];
+	}
+	
+	procedure Llama(idA: out int, id: in int){
+		int aux;
+		while(esperando==0 && cantidadEval<N) wait(llegoAlumno);
+		if(cantidadEval==30){
+			idA=-1; //señal de que se termino la espera
+			return;
+		}
+		pop(C,aux);
+		idA = aux;
+		esperando--;
+		ProfesorAsignado[idA] = id;
+		signal(vc[idA]);//en este punto ya tome a este alumno
+		//subo cantidad
+		cantidadEval++;
+		if(cantidadEval == N){
+		    signal_all(llegoAlumno);
+		}
+	}
+	
+}
+
+Monitor Escritorio[id:0..2]{
+	cond llegue;
+	boolean ocupado = false;
+	int Notas[N];
+	cond notaCargada[N];
+	
+	procedure tomarExamen(idA: in int){
+		//no tiene sentido tomar un examen si el alumno no llego
+		while(not ocupado) wait(llegue);
+		--toma el examen
+		Notas[idA]; //carga la nota del alumno
+		ocupado=false;
+		signal(notaCargada[idA]);
+	}
+	
+	procedure HacerExamen(nota:out int, id: in int){
+		ocupado=true;
+		signal(llegue);
+		--hace el examen
+		wait(notaCargada[id]);
+		nota = Notas[id];
+	}
+		
+}
+
+

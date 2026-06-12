@@ -1,0 +1,256 @@
+uponga una comisión con 50 alumnos. Cuando los alumnos llegan forman una fila, una
+vez que están los 50 en la fila el jefe de trabajos prácticos les entrega el número de grupo
+(número aleatorio del 1 al 25) de tal manera que dos alumnos tendrán el mismo número de
+grupo (suponga que el jefe posee una función DarNumero() que devuelve en forma aleatoria
+un número del 1 al 25, el jefe de trabajos prácticos no guarda el número que le asigna a
+cada alumno). Cuando un alumno ha recibido su número de grupo comienza a realizar la
+práctica. Al terminar de trabajar, el alumno le avisa al jefe de trabajos prácticos y espera la
+nota. El jefe de trabajos prácticos, cuando han llegado los dos alumnos de un grupo les
+devuelve a ambos la nota del GRUPO (el primer grupo en terminar tendrá como nota 25, el
+segundo 24, y así sucesivamente hasta el último que tendrá nota 1)
+// ==========================
+// PROCESOS
+// ==========================
+
+process Alumno[id:0..49]{
+    int grupo;
+    int nota;
+
+    TP.Llegar(grupo);
+
+    // realiza la práctica
+    delay();
+
+    TP.Terminar(grupo, nota);
+}
+
+
+// ==========================
+// MONITOR
+// ==========================
+
+Monitor TP{
+
+    // -------- ESTADO --------
+    int llegados = 0;
+    cond todosLlegaron;
+
+    int enGrupo[26] = ([26] 0);      // cuántos terminaron por grupo
+    int notaGrupo[26];               // nota final del grupo
+    int notaActual = 25;             // nota decreciente
+
+    cond esperandoNota[26];
+
+    // -------- LLEGADA --------
+    procedure Llegar(g: out int){
+
+        llegados++;
+
+        // barrera de 50 alumnos
+        if(llegados < 50)
+            wait(todosLlegaron);
+        else
+            signal_all(todosLlegaron);
+
+        // asignación aleatoria (el jefe no guarda estado)
+        g = DarNumero(); // 1..25
+    }
+
+    // -------- TERMINAR --------
+    procedure Terminar(g: in int, nota: out int){
+
+        enGrupo[g]++;
+
+        if(enGrupo[g] < 2){
+            // primer alumno del grupo espera
+            wait(esperandoNota[g]);
+        } else {
+            // segundo alumno → define la nota
+            notaGrupo[g] = notaActual;
+            notaActual--;
+
+            signal(esperandoNota[g]);
+        }
+
+        nota = notaGrupo[g];
+    }
+}
+
+En una playa hay 5 equipos de 4 personas cada uno (en total son 20 personas donde cada
+una conoce previamente a que equipo pertenece). Cuando las personas van llegando
+esperan con los de su equipo hasta que el mismo esté completo (hayan llegado los 4
+integrantes), a partir de ese momento el equipo comienza a jugar. El juego consiste en que
+cada integrante del grupo junta 15 monedas de a una en una playa (las monedas pueden ser
+de 1, 2 o 5 pesos) y se suman los montos de las 60 monedas conseguidas en el grupo. Al
+finalizar cada persona debe conocer el monto total juntado por su grupo.
+Nota: maximizar
+la concurrencia. Suponga que para simular la búsqueda de una moneda por parte de una
+persona existe una función Moneda() que retorna el valor de la moneda encontrada
+// ==========================
+// PROCESOS
+// ==========================
+
+process Persona[id:0..19]{
+    int equipo; // asumido conocido
+    int total;
+
+    Playa.Llegar(equipo);
+
+    int suma = 0;
+
+    // junta 15 monedas
+    for i=1..15{
+        suma += Moneda();
+    }
+
+    Playa.Terminar(equipo, suma, total);
+}
+
+
+// ==========================
+// MONITOR
+// ==========================
+
+Monitor Playa{
+
+    // -------- ESTADO --------
+    int llegaron[5] = ([5] 0);
+    cond listo[5];
+
+    int terminaron[5] = ([5] 0);
+    int sumaGrupo[5] = ([5] 0);
+
+    cond fin[5];
+
+    // -------- LLEGADA --------
+    procedure Llegar(eq: in int){
+
+        llegaron[eq]++;
+
+        // barrera de 4 personas por equipo
+        if(llegaron[eq] < 4)
+            wait(listo[eq]);
+        else
+            signal_all(listo[eq]);
+    }
+
+    // -------- TERMINAR --------
+    procedure Terminar(eq: in int, aporte: in int, total: out int){
+
+        sumaGrupo[eq] += aporte;
+        terminaron[eq]++;
+
+        if(terminaron[eq] < 4){
+            wait(fin[eq]);
+        } else {
+            // último en terminar despierta a todos
+            signal_all(fin[eq]);
+        }
+
+        total = sumaGrupo[eq];
+    }
+}
+ Se debe simular una maratón con C corredores donde en la llegada hay UNA máquinas
+expendedoras de agua con capacidad para 20 botellas. Además existe un repositor
+encargado de reponer las botellas de la máquina. Cuando los C corredores han llegado al
+inicio comienza la carrera. Cuando un corredor termina la carrera se dirigen a la máquina
+expendedora, espera su turno (respetando el orden de llegada), saca una botella y se retira. Si
+encuentra la máquina sin botellas, le avisa al repositor para que cargue nuevamente la
+máquina con 20 botellas; espera a que se haga la recarga; saca una botella y se retira.
+Nota:
+maximizar la concurrencia; mientras se reponen las botellas se debe permitir que otros
+corredores se encolen.
+
+// ==========================
+// PROCESOS
+// ==========================
+
+process Corredor[id:0..C-1]{
+
+    Maraton.Llegada();
+
+    // carrera
+    delay();
+
+    Maraton.TomarAgua();
+}
+
+
+process Repositor{
+    while(true){
+        Maraton.Reponer();
+    }
+}
+
+
+// ==========================
+// MONITOR
+// ==========================
+
+Monitor Maraton{
+
+    // -------- ESTADO --------
+    int llegaron = 0;
+    cond inicio;
+
+    int botellas = 20;
+
+    Cola C;              // cola FIFO de corredores
+    cond espera[C];
+
+    cond hayPedido;      // aviso al repositor
+    cond reposicion;     // espera de recarga
+
+    // -------- LLEGADA --------
+    procedure Llegada(){
+
+        llegaron++;
+
+        if(llegaron < C)
+            wait(inicio);
+        else
+            signal_all(inicio);
+    }
+
+    // -------- TOMAR AGUA --------
+    procedure TomarAgua(){
+
+        int id = get_id(); // asumimos forma de obtener id
+
+        push(C, id);
+
+        // espera turno
+        while(front(C) != id)
+            wait(espera[id]);
+
+        // es su turno
+        if(botellas == 0){
+            signal(hayPedido);
+            wait(reposicion);
+        }
+
+        // toma botella
+        botellas--;
+
+        pop(C);
+
+        // despierta al siguiente si hay
+        if(not empty(C)){
+            int sig = front(C);
+            signal(espera[sig]);
+        }
+    }
+
+    // -------- REPONER --------
+    procedure Reponer(){
+
+        while(botellas > 0)
+            wait(hayPedido);
+
+        // recarga
+        botellas = 20;
+
+        signal_all(reposicion);
+    }
+}
+

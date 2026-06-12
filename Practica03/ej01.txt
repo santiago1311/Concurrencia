@@ -1,0 +1,28 @@
+Monitor database{
+	int cantidad = 5;
+	int esperando = 0;
+	cond vc;
+
+	procedure entrar(){
+		if (cantidad == 0) {
+			esperando++;
+			wait(vc);
+		}
+		cantidad --;
+	}
+	
+	procedure salir(){
+		if (esperando > 0){
+			signal(vc);//el orden es indiferente porque mientras este ejecutando el monitor esta ocupado
+			esperando--;
+		}
+		else cantidad++;
+	}
+		
+}
+
+Process lector{
+	database.entrar();
+	LeerBase();
+	database.salir();
+}

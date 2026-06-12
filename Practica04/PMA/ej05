@@ -1,0 +1,113 @@
+Resolver la administración de 3 impresoras de una oficina. Las impresoras son usadas por N
+administrativos, los cuales están continuamente trabajando y cada tanto envían documentos
+a imprimir. Cada impresora, cuando está libre, toma un documento y lo imprime, de
+acuerdo con el orden de llegada.
+a) Implemente una solución para el problema descrito.
+chan imprimir(archivo);
+
+process Administrativo[int id:0..N-1]{
+	archivo arch;
+	while(true){
+		trabajar(arch); //si sale de aca es porque tiene un archivo que imprimir
+		send imprimir (arch);
+	}	
+}
+process impresora[int id:0..2]{
+	archivo archImp;
+	while(true){
+		receive imprimir(archImp);
+		imprimo(archImp);
+	}		
+}
+
+b) Modifique la solución implementada para que considere la presencia de un director de
+oficina que también usa las impresas, el cual tiene prioridad sobre los administrativos.
+
+chan imprimirEmp(text);
+chan imprimirDir(text);
+chan laburo(int);
+chan labura[3](text);
+
+process Administrativo[int id:0..N-1]{
+	text arch;
+	while(true){
+		trabajar(arch); //si sale de aca es porque tiene un archivo que imprimir
+		send imprimirEmp(arch);
+	}	
+}
+
+process director{
+	text arch;
+	while(true){
+		trabajar(arch);
+		send imprimirDir(arch);
+	}
+}
+
+process impresora[int id:0..2]{
+	tect archImp;
+	while(true){
+		send laburo(id);
+		receive labura[id](archImp);
+		if (archImp != "NOHAY"){
+			imprimir(archImp);
+		}
+	}		
+}
+
+process coordinador{
+	text archImp;
+	int idImp;
+	while(true){
+		receive laburo (idImp);
+		if(!empty(imprimirDir)){
+			receive imprimirDir(archImp);
+			send labura[idImp] (archImp);
+		elif (!empty(imprimirEmp)){
+			receive imprimirEmp(archImp);
+			send labura[idImp] (archImp);
+		}else send labura[idImp] ("NOHAY");
+	}
+}
+
+c) Modifique la solución (a) considerando que cada administrativo imprime 10 trabajos y
+que todos los procesos deben terminar su ejecución.
+
+chan imprimir(text);
+chan termine;
+chan contadorTerm(int);
+
+process Administrativo[int id:0..N-1]{
+	text arch;
+	int contador = 0;
+	while(contador<10){
+		trabajar(arch); //si sale de aca es porque tiene un archivo que imprimir
+		send imprimir (arch);
+		contador++;
+	}	
+	send termine;
+}
+
+process impresora[int id:0..2]{
+	text archImp;
+	int contadorTerminados = 0;
+	if (empty(contadorTerm)) send contadorTerm(contadorTerminados);//la primera impresora
+	//y unicamente esa impresora va  ainicializar el contador de terminados 
+	while(true){
+		if (empty(imprimir) && (contadorTerminados == N)) break;
+		receive imprimir(archImp);
+		imprimo(archImp);
+		if(!empty(termine)){
+			receive(termine);
+			receive contadorTerm(contadorTerminados);
+			contadorTerminados++;
+			send contadorTerm(contadorTerminados);	
+		}
+	}		
+}
+
+d) Modifique la solución (b) considerando que tanto el director como cada administrativo
+imprimen 10 trabajos y que todos los procesos deben terminar su ejecución.
+e) Si la solución al ítem d) implica realizar Busy Waiting, modifíquela para evitarlo.
+Nota: ni los administrativos ni el director deben esperar a que se imprima el documento
+

@@ -1,0 +1,75 @@
+Existen n personas que deben ser chequeadas por un detector de metales antes de poder ingresar al avion
+a) Analizar el problema
+Como primera medida se debe tener en cuenta que solo puede haber una persona por detector, ya que claramente si pasan dos al mismo tiempo y una contiene metal no se podrá determinar
+cual de las dos es, por otro lado, yo considero también que se debe tener en cuenta el orden en el que van llegando, ya que en un aeropuerto siempre se hacen filas para abordar y 
+sería algo injusto que una persona que recién llego entre antes en el detector que una persona que esta hace una hora esperando.
+Otra salvedad a tener en cuenta es que deberiamos contar con dos semaforos, uno para que se puedan encolar, al que llamaremos mutex y otro para que puedan acceder al detector
+estos semaforos son independientes el uno del otro, ya que es algo logico que una persona este llegando a encolarse y otra al mismo tiempo este en el detector.
+Por otro lado, se debe tener cuidado también a la hora de ingresar, ya que no queremos una espera innecesaria si no hay nadie en el detector.
+Por último, es el detector quien debe avisarle a la persona que puede pasar, y solo a esa persona, por lo tanto debemos tener semaforos privados donde cada persona se quede esperando.
+
+b)Implemente una solucion que modele el acceso de las personas a un detector
+Primeramente, voy a pensar la solución si no hubiera orden, es decir, que cualquier persona en cualquier orden pueda acceder al detector de metales si este estuviera libre,
+maximizando la concurrencia.
+
+sem mutex = 1; //el detector originalmente esta libre
+
+process Persona [id:0..N-1]{
+	P(mutex);
+	pasa por el detector
+	V(mutex);
+} 
+
+Ahora, si hubiera que respetar un orden:
+
+Cola c; Boolean libre = true; sem mutex = 1, detec[N] = ([N] 0) //inicializo las N posiciones en 0
+
+process Persona [id:0..N-1]{
+	P(mutex); //protejo el manejo de la cola
+	if(libre){
+		libre = false;
+		V(mutex);}
+	}else if (!libre){
+		encolar(c, id);
+		V(mutex);
+		P(detec[id];}
+	usa detector
+	P(mutex);
+	if (!cola.isEmpty()){
+		int aux = desencolar(c)
+		V(detec[aux]); //despierto al siguiente en la cola
+	}else{
+		libre = true;
+	}
+	V(mutex);
+}
+
+c) Modificar la solucion para un caso con tres detectores;
+
+int libre = D;// en este caso D es igual a 3
+cola C;
+sem mutex = 1, detec[n] = ([N] 0)
+
+process Persona[id:0..N-1] {
+	P(mutex);
+	if (libre > 0){
+		libre--;
+		V(mutex);
+	} else {
+		encolar(C,id);
+		V(mutex);
+		P(detec[id]); //espera a que lo llamen
+	}
+	usa el detector
+	P(mutex);
+	if(!cola.isEmpty()){
+		int aux = desencolar(c);
+		V(mutex);
+		V(detec[aux]);
+	} else {
+		libre++;
+		V(mutex);
+	}
+
+}
+	

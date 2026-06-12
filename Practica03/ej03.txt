@@ -1,0 +1,56 @@
+En un corralón de materiales hay un empleado que debe atender a N clientes de acuerdo al
+orden de llegada. Cuando un cliente es llamado por el empleado para ser atendido, le da una
+lista con los productos que comprará, y espera a que el empleado le entregue el
+comprobante de la compra realizada
+
+
+process Empleado{
+	while(true){
+		Servicio.Llamar();
+	}
+}
+
+process Cliente[id:0..N-1]{
+	text pedido;
+	text comprobante;
+	Servicio.Llegar(id);
+	Mostrador.DejarPedido(pedido,comprobante);
+}
+
+Monitor Servicio{
+	cond hayGente;
+	Cola C;
+	int esperando = 0;	
+	cond cv[N];
+	text pedidos [N];
+	cond dejePedido;
+	text comprobantes[N];
+	cond pedidoEntregado[N];
+	
+	procedure Llamar(){
+		int aux;
+		if(esperando ==0) wait(hayGente);
+		pop(C,aux);
+		esperando--;
+		signal(cv[aux]);
+		wait(dejePedido);
+		--recibe la compra en pedidos[N];
+		--genera el comprobante en comprobantes[aux]
+		signal(pedidoEntregado[aux]);
+	}		
+	
+	procedure Llegar(id: in int){
+		push(C,id);
+		esperando++;
+		signal(hayGente);
+		wait(cv[id]);
+	}
+	
+	procedure DejarPedido(id: in int, pedido: in text, comprobante: out text){
+		pedidos[id]=pedido;
+		signal(dejePedido);
+		wait(pedidoEntregado[id]);//es una relación sincrónica
+		comprobante = comprobantes[id];
+	}
+}
+

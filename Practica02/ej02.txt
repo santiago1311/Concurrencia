@@ -1,0 +1,41 @@
+En una empresa de logistica existe una sala de contenedores donde se preparan las entregas
+cada contenedor puede almacenar un paquete y la sala cuenta con capacidad para N cont.
+a) La empresa cuenta con dos empleados: un empleado preparador, que prepara los paquetes y los
+deja en los contenedores y un empleado entregador que se ocupa de tomar los paquetes de los
+contenedores y realizar las entregas. Tanto el preparador como el entregador trabajan de a un paquete por vez
+
+Entonces, como no hay ninguna limitacion de cuantas personas pueden estar en la sala de contenedores supongo que la unica limitacion es la de armar un paquete cada uno
+
+sem mutex =1, lleno = 0, vacio = N; int contador = 0;
+
+Process Preparador{
+	while(true){
+		prepararPaquete();
+		P(vacio);
+		P(mutex);
+		depositaPaq();
+		V(mutex);
+		V(lleno);
+	}
+}
+
+Process Entregador{
+	while (true){
+		P(lleno);
+		P(mutex);
+		tomarPaquete();
+		V(mutex);
+		V(vacio);
+		entregaPaquete();
+}
+b)Modificar la solucion para que haya P empleados preparadores.
+
+Process Preparador[id:0..N-1]{
+	while(true){
+		
+	}
+	
+}
+
+cualquiera de las soluciones siguientes es la misma, ya que solo uno podra acceder a la vez
+preguntar en consulta.

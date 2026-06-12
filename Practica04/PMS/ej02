@@ -1,0 +1,51 @@
+En un laboratorio de genética veterinaria hay 3 empleados. El primero de ellos
+continuamente prepara las muestras de ADN; cada vez que termina, se la envía al segundo
+empleado y vuelve a su trabajo. El segundo empleado toma cada muestra de ADN
+preparada, arma el set de análisis que se deben realizar con ella y espera el resultado para
+archivarlo. Por último, el tercer empleado se encarga de realizar el análisis y devolverle el
+resultado al segundo empleado.
+
+process preparador{
+	text muestra;
+	while (true){
+		prepararMuestra(muestra);
+		admin!enviar(muestra);
+	}	
+}
+
+process admin{
+	text muestra;
+	cola c;
+	do
+		::preparador?enviar(muestra); -> encolar(c, muestra);
+		::!empty(c); archivador?(); ->
+			desencolar(c,muestra); //no aclara nada del orden la consigna
+		 	archivador!enviar(muestra);
+	od
+}
+
+process archivador{
+	text muestra;
+	text set;
+	text resultado;
+	cola resultados;
+	while (true){
+		admin!() -> admin?enviar(muestra);
+		armarSet(muestra, set);
+		analista!enviar(muestra,set);
+		analista?recibir(resultado);
+		encolar(resultados, resultado);
+	}
+
+}
+
+process analista{
+	text muestra;
+	text set;
+	text resultados;
+	while (true){
+		archivador?enviar(muestra,set);
+		hacerAnalisis(muestra,set, resultados);
+		archivador!recibir(resultados);
+	}	
+}

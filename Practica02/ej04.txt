@@ -1,0 +1,57 @@
+En un sistema matemático existen 5 procesos
+worker que deben resolver en forma
+colaborativa el procesamiento de un vector de enteros de tamaño N=1.000.000,
+minimizando el tiempo de ejecución. Analice el problema y defina que distribución de trabajo
+serán necesarios/convenientes para resolverlo de acuerdo al procesamiento a realizar en cada
+item:
+a) Se debe obtener la suma de todos los elementos del vector
+
+Vector vector[N](int), sum_local[5]=([5]0); sem mutex = 1; int suma = 0; int aux = 0;
+
+Process worker [id:0..4]{
+	int i;
+	while(true){
+		P(mutex);
+		if(aux >= N){
+			V(mutex);
+			break;
+		}
+		int i = aux;
+		aux++;
+		V(mutex);
+		sum_local[id]+=i;
+	}
+	P(mutex);
+	suma+=sum_local[id];
+	V(mutex);
+}
+
+b) se debe obtener el factorial de cada elemento del vector
+
+ahora vamos a usar un bloque de datos para cada uno, asi evitamos el acceso constante
+a tomar un dato del vector.
+
+int bloque = 1000; //es trivial, puede ser cualquier valor que maximice la concurrencia en este caso tengo en cuenta que esto representará 1000 ingresos a la zona crítica en lugar de 1000000
+//Si hiciera que esto sea muy grande, (ejemplo 200000 para que cada zona ya tenga su bloque de trabajo determinado) podria pasar que el trabajo no sea equitativo
+//ya que quizas a uno le toque hacer el factorial de 4 mientras al otro le toca hacer el factorial de 1200
+
+Vector vector [n](int); int aux = 0; sem mutex = 1;
+
+Process worker[id:0..4]{
+	int inicio;
+	int fin;
+	while (true){
+		P(mutex);
+		if(aux >= N){
+			V(mutex);
+			break;
+		}
+		inicio = aux;
+		aux += bloque;
+		V(mutex);
+		fin = inicio+bloque
+		for (int i = inicio, i<fin, i++){
+			factorial(vector[i]);
+		}
+	}
+}

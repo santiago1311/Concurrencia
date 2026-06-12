@@ -1,0 +1,57 @@
+Una empresa de turismo posee 4 combis con capacidad para 25 personas cada una y
+UN vendedor que vende los pasajes a los clientes de acuerdo al orden de llegada. Hay C clientes
+que al llegar intentan comprar un pasaje para una combi en particular (el cliente conoce este
+dato); si aún hay lugar en la combi seleccionada se le da el pasaje y se dirige hacia la combi;
+en caso contrario se retira. Cada combi espera a que suban los 25 pasajeros, luego realiza el
+viaje, y cuando llega al destino deja bajar a todos los pasajeros.
+Nota: maximizar la concurrencia; suponga que para cada combi al menos 25 clientes intentarán comprar pasaje.
+
+sem mutex = 1, clientes[C] = ([C]0), 1encola = 0, empezar_viaje[4] =[4] 0, llegamos[4] = [4]0, finalizar_viaje[4]=[4]0, mutex_combi[4] = [4] 1; 
+cola c; int [4] combi = ([4] 0), int [4] pasajes = 25;
+boolean [C] compre = ([C] false);
+Process cliente [id:0..C-1]{
+	int pasaje;//combi a la que quiere subir
+	P(mutex);
+	encolarse(c,id,pasaje);
+	V(mutex);
+	V(1encola);
+	P(clientes[id]);
+	if(!compre[id]){
+		//se va
+	}else{
+		//va a la combi
+		P(mutex_combi[pasaje]);	
+		combi[pasaje]++;
+		if (combi[pasaje] == 25){
+			V(empezar_viaje[pasaje]);
+		}
+		V(mutex_combi[pasaje]);
+		P(llegamos[pasaje]);
+		P(mutex_combi[pasaje]);	
+		combi[pasaje]--;
+		if (combi[pasaje] == 0) V(finalizar_viaje[pasaje]);
+		V(mutex_combi[pasaje]);
+	}
+}
+
+Process vendedor{
+	int [2] clienteypasaje;
+	while(true){
+		P(1encola);
+		P(mutex);
+		clienteypasaje = desencolar(c);
+		V(mutex);
+		if(pasajes[clienteypasaje[1]] > 0){
+			compre[clienteypasaje[0]] = true;
+			pasajes[clienteypasaje[1]]--;
+		}	
+		V(clientes[clienteypasaje[0]]);
+	}
+}
+
+Process combi[id:0..3]{
+	P(empezar_viaje[id]);
+	//viaja
+	for (int i = 0..24) V(llegamos[id]);
+	P(finalizar_viaje[id]);
+}

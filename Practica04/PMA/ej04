@@ -1,0 +1,96 @@
+Simular la atención en un locutorio con 10 cabinas telefónicas, el cual tiene un empleado
+que se encarga de atender a N clientes. Al llegar, cada cliente espera hasta que el empleado
+le indique a qué cabina ir, la usa y luego se dirige al empleado para pagarle. El empleado
+atiende a los clientes en el orden en que hacen los pedidos, pero siempre dando prioridad a
+los que terminaron de usar la cabina. A cada cliente se le entrega un ticket factura por la
+operación.
+a) Implemente una solución para el problema descrito. //aca no hay prioridad 
+Process cliente[int id:0..N-1]{
+	int idCab;
+	text factura;
+	send quieroCabina(id);
+	receive tomaCabina[id](idCab);
+	usarCabina(idCab);//va a la cabina que le corresponde y la usa
+	send dejeCabina(id, idCab);
+	receive facturas[id](factura);
+}
+
+process Empleado{
+	boolean cabinas [10]=([10] true);//vector que nos dice que cabina esta libre
+	int idCliente;
+	int idCab;
+	text factura;
+	Cola clientes;
+	while(true){
+		if
+		::(!empty(dejeCabina))->
+			receive dejeCabina(idCliente, idCab);
+			Cobrar(factura); //cobra y genera la factura
+			send facturas[idCliente](factura);
+			if (!empty(clientes)){
+				desencolar(clientes, idCliente);
+				send tomaCabina[idCliente](idCab);
+			}else cabinas[idCab] = true;
+		}
+		:: (!empty(quieroCabina) ->
+			receive quieroCabina(idCliente);
+			if(cabinaLibre(cabinas, idCab)){//esta función devolverá una cabina libre en idCab, es booleana
+			send tomaCabina[idCliente] (idCab);
+			cabinas[idCab] = false;} else{
+				encolar(clientes,idCliente);//armo una cola paralela de clientes ya esperando para maximizar concurrencia
+			}
+		fi
+	}
+	
+}
+	
+
+b) Modifique la solución implementada para que el empleado dé prioridad a los que
+terminaron de usar la cabina sobre los que están esperando para usarla.
+Nota
+: maximizar la concurrencia; suponga que hay una función Cobrar() llamada por el
+empleado que simula que el empleado le cobra al clientes
+
+chan quieroCabina(int);
+chan tomaCabina[N](int);
+chan dejeCabina(int, int);
+chan facturas[N](text);
+
+process cliente[int id:0..N-1]{
+	int idCab;
+	text factura;
+	send quieroCabina(id);
+	receive tomaCabina[id](idCab);
+	usarCabina(idCab);//va a la cabina que le corresponde y la usa
+	send dejeCabina(id, idCab);
+	receive facturas[id](factura);
+}
+
+process Empleado{
+	boolean cabinas [10]=([10] true);//vector que nos dice que cabina esta libre
+	int idCliente;
+	int idCab;
+	text factura;
+	Cola clientes;
+	while(true){
+		if(!empty(dejeCabina)){
+			receive dejeCabina(idCliente, idCab);
+			Cobrar(factura); //cobra y genera la factura
+			send facturas[idCliente](factura);
+			if (!empty(clientes)){
+				desencolar(clientes, idCliente);
+				send tomaCabina[idCliente](idCab);
+			}else cabinas[idCab] = true;
+		}elif(!empty(quieroCabina){
+			receive quieroCabina(idCliente);
+			if(cabinaLibre(cabinas, idCab)){//esta función devolverá una cabina libre en idCab, es booleana
+			send tomaCabina[idCliente] (idCab);
+			cabinas[idCab] = false;}
+			else{
+				encolar(clientes,idCliente);//armo una cola paralela de clientes ya esperando para maximizar concurrencia
+			}
+		}
+	
+	}
+	
+}

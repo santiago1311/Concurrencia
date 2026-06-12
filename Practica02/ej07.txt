@@ -1,0 +1,67 @@
+Se debe simular una maratón con
+C corredores donde en la llegada hay UNA máquinas
+expendedoras de agua con capacidad para 20 botellas. Además existe
+un repositor
+encargado de reponer las botellas de la máquina. Cuando los C corredores han llegado 
+al inicio comienza la carrera. Cuando un corredor termina la carrera se dirigen a la máquina
+expendedora, espera su turno (respetando el orden de llegada), saca una botella y se retira. Si
+encuentra la máquina sin botellas, le avisa al repositor para que cargue nuevamente la máquina
+con 20 botellas; espera a que se haga la recarga; saca una botella y se retira.
+Nota: maximizar la concurrencia; mientras se reponen las botellas se debe 
+permitir que otros corredores se encolen.
+
+sem barrera=0, mutex =1, fin=1, rep=0, botellas =20;
+int contador = 0, contador_fin=0; cola c;
+sem corredores[C]= ([C] 0);
+boolean libre = true;
+
+Process corredor [id:0..1]{
+	//llega a la salida
+	P(mutex);
+	contador++;
+	if (contador == C){
+		for(int i = 0..C-1) V(barrera);
+	}
+	V(mutex);
+	P(barrera);
+	//corre
+	P(fin);//llega a la meta, va a la maquina expendedora
+	if (libre && botellas > 0) {
+		libre = false;
+		V(mutex_fin);
+	}else if(botellas == 0){
+		V(rep);
+		encolar(c,id);
+		V(mutex_fin);
+		P(corredores[id]);
+	} else {
+		encolar(c,id);
+		V(mutex_fin);
+		P(corredores[id]);
+	}
+	tomarBotella(); //disminuirá en 1 la cantidad de botellas
+	if (!cola.isEmpty()){
+		contador_fin++;
+		V(corredores[desencolar(c)];
+	}else{
+		P(mutex_fin);
+		contador_fin++;
+		libre = true;
+		V(rep);
+		V(mutex_fin);
+	}
+}
+
+Process repositor{
+	while(true){	
+		P(rep);
+		if(contador_fin == C){
+			break;
+		}
+		reponer(); //esto seteara las botellas a 20
+		if (!cola.isEmpty()) V(corredores[desencolar(c)];
+	}
+}
+	
+//luego volvemos
+

@@ -1,0 +1,134 @@
+Existen N personas que deben fotocopiar un documento cada una. Resolver cada ítem
+usando semáforos:
+a) Implemente una solución suponiendo que existe una única fotocopiadora compartida
+por todas las personas, y las mismas la deben usar de a una persona a la vez, sin importar
+el orden. Existe una función Fotocopiar() llamada por la persona que simula el uso de la
+fotocopiadora. Sólo se deben usar los procesos que representan a las Personas.
+
+sem mutex = 1; 
+
+Process persona[id:0..N-1]{
+	P(mutex);
+	Fotocopiar();
+	V(mutex);
+}
+
+b)Modifique la solución de (a) para el caso en el que se deba representar el orden de llegada
+
+sem mutex = 1, personas[N] = ([N]0), boolean libre = true; cola C;
+
+Process persona [id:0..N-1]{
+	P(mutex);
+	if(libre){
+		libre = false;
+		V(mutex);
+	}else{
+		encolar(C,id);
+		V(mutex);
+		P(personas[id]);
+	}
+	Fotocopiar();
+	P(mutex);
+	if(cola.isEmpty()){
+		libre = true;
+	} else {
+		V(espera[desencolar(c)]);
+	}
+	V(mutex);	
+}
+
+c) Modifique la solucion en b para el caso que se deba dar prioridad de acuerdo a la edad de cada 
+persona (cuando la fotocopiadora este libre la debe usar la persona de mayor edad en espera)
+
+Process persona[id:0..N-1]{
+	int edad = MiEdad;
+	P(mutex);
+	if(libre){
+		libre = false;
+		V(mutex);
+	}else{
+		encolar(C,id,edad); //toda la logica del orden se da acá
+		V(mutex);
+		P(personas[id]);
+	}
+	Fotocopiar();
+	P(mutex);
+	if(cola.isEmpty()) libre = true;
+	else V(espera[desencolar(c)];
+	V(mutex);}
+}
+
+d) Modifique la solucion de a para que se deba respetar estrictamente el orden 
+dado por el identificador de proceso (la persona x no puede usar la fotocopiadora 
+hasta que haya terminado de usarlo la persona x-1).
+
+sem personas[N+1] = (1, [N] 0); //preguntar si esto es valido, estoy tratando
+//de inicializar unicamente el primer elemento en 1, el resto en 0
+//lo hago de tamaño N+1 para que la ultima persona no genere un desborde y me genere un conflicto
+Process persona[id:0..N-1]{
+	P(personas[id]); //la persona de id=0 entra directamente
+	Fotocopiar();
+	V(personas[id+1];
+}
+
+e) Modifique la solución de (b) para el caso en que además haya un Empleado que le indica
+a cada persona cuando debe usar la fotocopiadora.
+
+sem mutex = 1, personas[N] = ([N]0), ya_imprimi = 0, 1encola=0; cola C; 
+
+Process persona [id:0..N-1]{
+	P(mutex);
+	encolar(C,id);
+	V(mutex);
+	V(1encola);
+	P(personas[id]);
+	Fotocopiar();
+	V(ya_imprimi);	
+}
+
+Process Empleado{
+	int contador = 0;
+	int aux;
+	while (contador<N){
+		P(1encola);
+		P(mutex);
+		aux = desencolar(C);
+		V(personas[aux]);
+		V(mutex);
+		P(ya_imprimi);
+		contador++;
+	}
+		
+}
+	
+f) Modificar la solución (e) para el caso que sean 10 fotocopiadoras.
+
+
+sem mutex = 1, personas[N] = ([N]0), ya_imprimi = 0, 1encola=0;
+cola C, imp; int buffer_imp;
+
+Process persona [id:0..N-1]{
+	P(mutex);
+	encolar(C,id);
+	V(mutex);
+	V(1encola);
+	P(personas[id]);
+	Fotocopiar();
+	V(ya_imprimi);	
+}
+
+Process Empleado{
+	int contador = 0;
+	int aux;
+	while (contador<N){
+		P(1encola);
+		P(mutex);
+		aux = desencolar(C);
+		V(personas[aux]);
+		V(mutex);
+		P(ya_imprimi);
+		contador++;
+	}
+		
+}
+//preguntar
